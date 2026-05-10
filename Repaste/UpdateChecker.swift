@@ -4,7 +4,7 @@ import Foundation
 @MainActor
 final class UpdateChecker: ObservableObject {
     /// Change this to your actual GitHub repo (owner/repo).
-    static let githubRepo = "kunalzed/repaste"
+    static let githubRepo = "kunal-png/repaste"
 
     @Published var latestVersion: String?
     @Published var releaseURL: URL?

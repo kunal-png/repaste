@@ -6,6 +6,16 @@
   A lightweight macOS clipboard manager that lets you scroll through your clipboard history and paste any previous item — instantly.
 </p>
 
+<p align="center">
+  <a href="https://github.com/kunal-png/repaste/releases/latest/download/Repaste-v1.0.0.dmg">
+    <img src="https://img.shields.io/badge/Download-Repaste.dmg-8B5CF6?style=for-the-badge&logo=apple&logoColor=white" alt="Download DMG">
+  </a>
+  &nbsp;&nbsp;
+  <a href="https://github.com/kunal-png/repaste/releases/latest">
+    <img src="https://img.shields.io/github/v/release/kunal-png/repaste?style=for-the-badge&color=1e1e2e&label=Latest" alt="Latest Release">
+  </a>
+</p>
+
 ## How It Works
 
 1. Copy things as usual (⌘C)
@@ -23,7 +33,7 @@
 ## Installation
 
 ### Download
-1. Go to the [Releases](https://github.com/kunalzed/repaste/releases) page
+1. Go to the [Releases](https://github.com/kunal-png/repaste/releases) page
 2. Download the latest `.dmg` file
 3. Open the DMG, double click to launch, it appears in your menu bar
 4. Grant **Accessibility** permission when prompted (required for global shortcuts)
@@ -31,7 +41,7 @@
 
 ### Build from Source
 ```bash
-git clone https://github.com/kunalzed/repaste.git
+git clone https://github.com/kunal-png/repaste.git
 cd repaste
 open Repaste.xcodeproj
 ```
