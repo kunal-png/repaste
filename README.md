@@ -16,21 +16,18 @@
 
 ## Features
 
-- **Rotary carousel UI** — scroll through clipboard history with a smooth, animated arc
 - **Custom shortcut** — click to record any key combination you want
 - **Position options** — show the picker centered on screen or above your text cursor
-- **Lightweight** — runs as a menu bar app, no Dock icon
 - **Privacy-first** — all data stays local, no network access except optional update checks
-- **Auto-update checks** — get notified when a new version is available on GitHub
 
 ## Installation
 
 ### Download
 1. Go to the [Releases](https://github.com/kunalzed/repaste/releases) page
 2. Download the latest `.dmg` file
-3. Open the DMG, drag **Repaste** to your Applications folder
-4. Launch Repaste — it appears in your menu bar
-5. Grant **Accessibility** permission when prompted (required for global shortcuts)
+3. Open the DMG, double click to launch, it appears in your menu bar
+4. Grant **Accessibility** permission when prompted (required for global shortcuts)
+5. click on **start listning** in repaste/settings to listen for your shortcut, click on refresh listner everytime you update shortcut key or for general troubleshooting
 
 ### Build from Source
 ```bash
@@ -66,3 +63,5 @@ Then build and run in Xcode (⌘R).
 ## Contributing
 
 Issues and pull requests are welcome! Please open an issue first to discuss any major changes.
+
+the code is generated with cursor(composer).
