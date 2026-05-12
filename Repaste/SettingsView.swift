@@ -189,18 +189,110 @@ private struct ShortcutRecorderView: View {
     }
 }
 
+// MARK: - Scroll wheel capture (settings carousel demo)
+
+private struct ScrollWheelCaptureView: NSViewRepresentable {
+    var onScroll: (CGFloat, CGFloat) -> Void
+
+    final class ScrollCatchingNSView: NSView {
+        var onScroll: ((CGFloat, CGFloat) -> Void)?
+
+        override func scrollWheel(with event: NSEvent) {
+            let dx: CGFloat
+            let dy: CGFloat
+            if let cg = event.cgEvent {
+                let d = HotkeyController.scrollWheelDeltas(from: cg)
+                dx = d.dx
+                dy = d.dy
+            } else {
+                dx = event.scrollingDeltaX
+                dy = event.scrollingDeltaY
+            }
+            onScroll?(dx, dy)
+        }
+
+        override var isFlipped: Bool { true }
+    }
+
+    func makeNSView(context: Context) -> ScrollCatchingNSView {
+        ScrollCatchingNSView()
+    }
+
+    func updateNSView(_ nsView: ScrollCatchingNSView, context: Context) {
+        nsView.onScroll = onScroll
+    }
+}
+
+// MARK: - Scroll sensitivity snapping (discrete stops)
+
+private enum ScrollSensitivitySnapping {
+    /// 31 stops from 0.25× to 2.5× (matches slider step count).
+    static let count = 31
+    static let minValue = 0.25
+    static let maxValue = 2.5
+
+    static func value(at index: Int) -> Double {
+        let idx = min(max(index, 0), count - 1)
+        guard count > 1 else { return minValue }
+        return minValue + (maxValue - minValue) * Double(idx) / Double(count - 1)
+    }
+
+    static func index(for value: Double) -> Int {
+        let v = min(max(value, minValue), maxValue)
+        guard count > 1 else { return 0 }
+        let t = (v - minValue) / (maxValue - minValue)
+        return Int((t * Double(count - 1)).rounded())
+    }
+
+    static func snapped(_ stored: Double) -> Double {
+        value(at: index(for: stored))
+    }
+}
+
 // MARK: - Settings view
 
 struct SettingsView: View {
+    private static let carouselDemoScale: CGFloat = 0.46
+    /// Inset so the slider thumb at min/max lines up with the caption edges.
+    private static let sensitivitySliderGutter: CGFloat = 10
+
     @EnvironmentObject private var model: AppModel
     @AppStorage(UserDefaultsKeys.historyLimit) private var historyLimitStorage = 50
     @AppStorage(UserDefaultsKeys.pickerPosition) private var pickerPosition = "cursor"
+    @AppStorage(UserDefaultsKeys.scrollWheelSensitivity) private var scrollSensitivity = 1.0
+    @AppStorage(UserDefaultsKeys.carouselHapticsEnabled) private var carouselHapticsEnabledStorage = true
+    @StateObject private var carouselDemoStore: ClipboardHistoryStore = {
+        let s = ClipboardHistoryStore(maxItems: { 99 })
+        let samples = (1 ... 7).map { i in
+            ClipboardItem(
+                plainText: "Sample clip \(i) — scroll here to test sensitivity",
+                rtfData: nil,
+                htmlData: nil,
+                imageTIFF: nil,
+                imagePNG: nil,
+                fileURLs: []
+            )
+        }
+        s.replaceItems(samples, selectedIndex: 3)
+        return s
+    }()
+    @State private var carouselDemoScrollAccum: CGFloat = 0
     @State private var accessibilityStatusRefresh = 0
     @State private var listenerJustStarted = false
 
     private var accessibilityTrusted: Bool {
         _ = accessibilityStatusRefresh
         return PasteService.isTrusted
+    }
+
+    private var scrollSensitivityIndexBinding: Binding<Double> {
+        Binding(
+            get: { Double(ScrollSensitivitySnapping.index(for: scrollSensitivity)) },
+            set: { newIdx in
+                let idx = min(max(Int(newIdx.rounded()), 0), ScrollSensitivitySnapping.count - 1)
+                scrollSensitivity = ScrollSensitivitySnapping.value(at: idx)
+            }
+        )
     }
 
     var body: some View {
@@ -284,6 +376,68 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
             }
 
+            // MARK: Carousel scroll
+            Section {
+                VStack(alignment: .leading, spacing: 12) {
+                    HStack {
+                        Text("Scroll sensitivity")
+                        Spacer()
+                        Text(String(format: "%.2f×", scrollSensitivity))
+                            .font(.caption.monospacedDigit())
+                            .foregroundStyle(.secondary)
+                    }
+                    VStack(alignment: .leading, spacing: 6) {
+                        Slider(
+                            value: scrollSensitivityIndexBinding,
+                            in: 0 ... Double(ScrollSensitivitySnapping.count - 1),
+                            step: 1
+                        )
+                        .labelsHidden()
+                        .padding(.horizontal, Self.sensitivitySliderGutter)
+                        HStack {
+                            Text("Less sensitive")
+                            Spacer()
+                            Text("More sensitive")
+                        }
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, Self.sensitivitySliderGutter)
+                    }
+                    Toggle("Haptic feedback when changing selection", isOn: $carouselHapticsEnabledStorage)
+
+                    Text("Preview matches the picker carousel while you hold your shortcut. Wheel over the preview to try the current setting.")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                        .fixedSize(horizontal: false, vertical: true)
+
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .fill(Color.primary.opacity(0.05))
+                        PickerView(store: carouselDemoStore)
+                            .frame(width: PickerMetrics.panelWidth, height: PickerMetrics.panelHeight)
+                            .scaleEffect(Self.carouselDemoScale)
+                            .frame(
+                                width: PickerMetrics.panelWidth * Self.carouselDemoScale,
+                                height: PickerMetrics.panelHeight * Self.carouselDemoScale
+                            )
+                        ScrollWheelCaptureView { dx, dy in
+                            handleCarouselDemoScroll(deltaX: dx, deltaY: dy)
+                        }
+                        .frame(
+                            width: PickerMetrics.panelWidth * Self.carouselDemoScale,
+                            height: PickerMetrics.panelHeight * Self.carouselDemoScale
+                        )
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+                .padding(.vertical, 4)
+            } header: {
+                Text("Carousel")
+            }
+            .onAppear {
+                scrollSensitivity = ScrollSensitivitySnapping.snapped(scrollSensitivity)
+            }
+
             // MARK: Updates
             Section("Updates") {
                 HStack(spacing: 10) {
@@ -358,6 +512,17 @@ struct SettingsView: View {
         .onReceive(NotificationCenter.default.publisher(for: NSApplication.didBecomeActiveNotification)) { _ in
             accessibilityStatusRefresh &+= 1
         }
+    }
+
+    private func handleCarouselDemoScroll(deltaX: CGFloat, deltaY: CGFloat) {
+        var accum = carouselDemoScrollAccum
+        CarouselWheelNavigation.applyScrollDelta(
+            deltaX: deltaX,
+            deltaY: deltaY,
+            scrollAccum: &accum,
+            store: carouselDemoStore
+        )
+        carouselDemoScrollAccum = accum
     }
 
     private func normalizeStoredShortcut() {

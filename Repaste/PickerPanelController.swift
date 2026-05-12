@@ -8,7 +8,7 @@ enum PickerVerticalPlacement {
     case belowCursor
 }
 
-private enum PickerMetrics {
+enum PickerMetrics {
     /// Fixed panel size — never changes, so the window never resizes or jumps.
     static let panelWidth: CGFloat = 800
     static let panelHeight: CGFloat = 300
@@ -120,18 +120,12 @@ final class PickerPanelController {
     }
 
     func applyScrollDelta(deltaX: CGFloat, deltaY: CGFloat, store: ClipboardHistoryStore) {
-        scrollAccum += deltaY + deltaX
-        let threshold: CGFloat = 14
-        guard abs(scrollAccum) >= threshold else { return }
-        let direction = scrollAccum > 0 ? 1 : -1
-        scrollAccum -= CGFloat(direction) * threshold
-
-        guard !store.items.isEmpty else { return }
-        let n = store.items.count
-        var idx = store.selectedIndex + direction
-        idx = min(max(0, idx), n - 1)
-        guard idx != store.selectedIndex else { return }
-        store.selectedIndex = idx
+        CarouselWheelNavigation.applyScrollDelta(
+            deltaX: deltaX,
+            deltaY: deltaY,
+            scrollAccum: &scrollAccum,
+            store: store
+        )
     }
 }
 

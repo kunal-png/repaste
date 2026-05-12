@@ -18,12 +18,12 @@ enum SettingsWindowPresenter {
 
         let root = SettingsView()
             .environmentObject(model)
-            .frame(minWidth: 460, minHeight: 480)
+            .frame(minWidth: 460, minHeight: 640)
 
         let host = NSHostingController(rootView: root)
         host.title = "Repaste Settings"
 
-        let rect = NSRect(x: 0, y: 0, width: 480, height: 520)
+        let rect = NSRect(x: 0, y: 0, width: 480, height: 700)
         let p = NSPanel(
             contentRect: rect,
             styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],

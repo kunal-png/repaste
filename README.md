@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/kunal-png/repaste/releases/latest/download/Repaste-v1.0.0.dmg">
+  <a href="https://github.com/kunal-png/repaste/releases/latest/download/Repaste-v1.1.0.dmg">
     <img src="https://img.shields.io/badge/Download-Repaste.dmg-8B5CF6?style=for-the-badge&logo=apple&logoColor=white" alt="Download DMG">
   </a>
   &nbsp;&nbsp;

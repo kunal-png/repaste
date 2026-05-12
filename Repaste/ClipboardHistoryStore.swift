@@ -1,3 +1,4 @@
+import AppKit
 import Combine
 import CoreGraphics
 import CryptoKit
@@ -133,6 +134,47 @@ final class ClipboardHistoryStore: ObservableObject {
         }
         selectedIndex = min(max(0, selectedIndex), items.count - 1)
     }
+
+    /// Replaces list content (e.g. settings carousel demo). Does not touch the pasteboard.
+    func replaceItems(_ items: [ClipboardItem], selectedIndex: Int = 0) {
+        self.items = items
+        if items.isEmpty {
+            self.selectedIndex = 0
+        } else {
+            self.selectedIndex = min(max(0, selectedIndex), items.count - 1)
+        }
+    }
+}
+
+// MARK: - Scroll wheel → carousel step
+
+@MainActor
+enum CarouselWheelNavigation {
+    /// Accumulated wheel delta needed to move one clip (unchanged from original behavior at 1.0× sensitivity).
+    private static let stepThreshold: CGFloat = 14
+
+    static func applyScrollDelta(
+        deltaX: CGFloat,
+        deltaY: CGFloat,
+        scrollAccum: inout CGFloat,
+        store: ClipboardHistoryStore
+    ) {
+        let mult = CGFloat(UserDefaults.standard.scrollWheelSensitivity)
+        scrollAccum += (deltaY + deltaX) * mult
+        guard abs(scrollAccum) >= stepThreshold else { return }
+        let direction = scrollAccum > 0 ? 1 : -1
+        scrollAccum -= CGFloat(direction) * stepThreshold
+
+        guard !store.items.isEmpty else { return }
+        let n = store.items.count
+        var idx = store.selectedIndex + direction
+        idx = min(max(0, idx), n - 1)
+        guard idx != store.selectedIndex else { return }
+        store.selectedIndex = idx
+        if UserDefaults.standard.carouselHapticsEnabled {
+            NSHapticFeedbackManager.defaultPerformer.perform(.generic, performanceTime: .default)
+        }
+    }
 }
 
 enum UserDefaultsKeys {
@@ -141,6 +183,10 @@ enum UserDefaultsKeys {
     static let hotkeyKeyCode = "hotkeyKeyCode"
     /// "centered" or "cursor" — where the picker panel appears.
     static let pickerPosition = "pickerPosition"
+    /// Multiplier for wheel deltas before thresholding (default 1.0). Higher = more sensitive.
+    static let scrollWheelSensitivity = "scrollWheelSensitivity"
+    /// Haptic tick when moving to another clip in the picker (default on).
+    static let carouselHapticsEnabled = "carouselHapticsEnabled"
 }
 
 extension UserDefaults {
@@ -162,5 +208,18 @@ extension UserDefaults {
             return [.maskCommand, .maskShift]
         }
         return CGEventFlags(rawValue: num.uint64Value)
+    }
+
+    /// Stored scroll multiplier; 0 means “unset” and maps to 1.0 for backwards compatibility.
+    var scrollWheelSensitivity: Double {
+        let v = double(forKey: UserDefaultsKeys.scrollWheelSensitivity)
+        if v == 0 { return 1.0 }
+        return min(2.5, max(0.25, v))
+    }
+
+    /// `bool(forKey:)` is false when unset — default is on until the user changes the toggle.
+    var carouselHapticsEnabled: Bool {
+        if object(forKey: UserDefaultsKeys.carouselHapticsEnabled) == nil { return true }
+        return bool(forKey: UserDefaultsKeys.carouselHapticsEnabled)
     }
 }

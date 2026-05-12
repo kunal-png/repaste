@@ -246,7 +246,7 @@ final class HotkeyController {
         }
     }
 
-    private static func scrollWheelDeltas(from event: CGEvent) -> (dx: CGFloat, dy: CGFloat) {
+    static func scrollWheelDeltas(from event: CGEvent) -> (dx: CGFloat, dy: CGFloat) {
         let dy1 = event.getDoubleValueField(.scrollWheelEventPointDeltaAxis1)
         let dx1 = event.getDoubleValueField(.scrollWheelEventPointDeltaAxis2)
         if dx1 != 0 || dy1 != 0 {
